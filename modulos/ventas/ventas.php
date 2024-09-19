@@ -48,7 +48,7 @@ function consultar_todas_las_ventas($fecha_inicio, $fecha_fin, $familia)
 }
 
 
-function hacer_venta($productos, $total, $ticket, $cambio)
+function hacer_venta($productos, $total, $ticket, $cliente, $cambio)
 {
     global $base_de_datos;
     require_once "../inventario/inventario.php";
@@ -56,14 +56,14 @@ function hacer_venta($productos, $total, $ticket, $cambio)
     $todo_correcto = true;
     foreach ($productos as $producto) {
         $todo_correcto = $todo_correcto and quitar_piezas($producto->cantidad, $producto->rowid);
-        $sentencia = $base_de_datos->prepare("INSERT INTO ventas(numero_venta, codigo_producto, nombre_producto, total, fecha, numero_productos, usuario, familia, utilidad) VALUES (?,?,?,?,?,?,?, ?, ?);");
-        $resultado_sentencia = $sentencia->execute(array($numero_venta, $producto->codigo, $producto->nombre, $producto->cantidad * $producto->precio_venta, date("Y-m-d H:i:s"), $producto->cantidad, $_SESSION["nombre_de_usuario"], $producto->familia, $producto->utilidad * $producto->cantidad));
+        $sentencia = $base_de_datos->prepare("INSERT INTO ventas(numero_venta, codigo_producto, nombre_producto, total, fecha, numero_productos, usuario, familia, utilidad,cliente) VALUES (?,?,?,?,?,?,?, ?, ?, ?);");
+        $resultado_sentencia = $sentencia->execute(array($numero_venta, $producto->codigo, $producto->nombre, $producto->cantidad * $producto->precio_venta, date("Y-m-d H:i:s"), $producto->cantidad, $_SESSION["nombre_de_usuario"], $producto->familia, $producto->utilidad * $producto->cantidad,$cliente));
         $todo_correcto = $todo_correcto and $resultado_sentencia;
     }
     $todo_correcto = $todo_correcto and ingresar_dinero_venta_caja($total, $numero_venta);
     if ($ticket === TRUE) {
         include "../ticket.php";
-        imprime_ticket($productos, $numero_venta, $cambio);
+        imprime_ticket($productos, $numero_venta, $cambio, $cliente);
     }
     return $todo_correcto;
 }
@@ -81,6 +81,7 @@ function ingresar_dinero_venta_caja($total, $numero_venta)
 function comprueba_si_existe_codigo($codigo)
 {
     global $base_de_datos;
+    $codigo=mb_strtoupper($codigo);
     $sentencia = $base_de_datos->prepare("SELECT count(*) AS count FROM inventario WHERE codigo = ?;");
     $sentencia->execute([$codigo]);
     $fila = $sentencia->fetch();
@@ -88,7 +89,14 @@ function comprueba_si_existe_codigo($codigo)
     if ($numero_filas >= 1) {
         $sentencia = $base_de_datos->prepare("SELECT * FROM inventario WHERE codigo = ?;");
         $sentencia->execute([$codigo]);
-        return $sentencia->fetch();
+        $ret=$sentencia->fetch();
+        if($ret['agregar']){
+            $sentencia2 = $base_de_datos->prepare("SELECT * FROM agregar WHERE id_prod = ?;");
+            $sentencia2->execute([$ret['rowid']]);
+            $fila2 = $sentencia2->fetchAll();
+            $ret['items']=$fila2;
+        }
+        return $ret;
     }
     return false;
 }
@@ -97,6 +105,7 @@ function comprueba_si_existe_codigo($codigo)
 function devolver_datos_autocompletado($busqueda)
 {
     global $base_de_datos;
+    $busqueda=mb_strtoupper($busqueda);
     $sentencia = $base_de_datos->prepare("SELECT * FROM inventario WHERE codigo LIKE ? OR nombre LIKE ? LIMIT 10;");
     $sentencia->execute(["%$busqueda%", "%$busqueda%",]);
     return $sentencia->fetchAll();

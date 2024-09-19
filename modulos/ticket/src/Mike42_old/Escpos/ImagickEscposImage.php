@@ -1,19 +1,19 @@
-<?php declare(strict_types=1);
+<?php
 /**
  * This file is part of escpos-php: PHP receipt printer library for use with
  * ESC/POS-compatible thermal and impact printers.
  *
- * Copyright (c) 2014-20 Michael Billington < michael.billington@gmail.com >,
+ * Copyright (c) 2014-16 Michael Billington < michael.billington@gmail.com >,
  * incorporating modifications by others. See CONTRIBUTORS.md for a full list.
  *
  * This software is distributed under the terms of the MIT license. See LICENSE.md
  * for details.
  */
-
 namespace Mike42\Escpos;
 
 use Exception;
 use Imagick;
+use Mike42\Escpos\EscposImage;
 
 /**
  * Implementation of EscposImage using the Imagick PHP plugin.
@@ -25,12 +25,12 @@ class ImagickEscposImage extends EscposImage
      *
      * @param Imagick $im Image to load from
      */
-    public function readImageFromImagick(Imagick $im)
+    public function readImageFromImagick(\Imagick $im)
     {
         /* Strip transparency */
         $im = self::alphaRemove($im);
         /* Threshold */
-        $im -> setImageType(Imagick::IMGTYPE_TRUECOLOR); // Remove transparency (good for PDF's)
+        $im -> setImageType(\Imagick::IMGTYPE_TRUECOLOR); // Remove transparency (good for PDF's)
         $max = $im->getQuantumRange();
         $max = $max["quantumRangeLong"];
         $im -> thresholdImage(0.5 * $max);
@@ -84,18 +84,18 @@ class ImagickEscposImage extends EscposImage
     /**
      * Load an image from disk, into memory, using Imagick.
      *
-     * @param string|null $filename The filename to load from
+     * @param string $filename The filename to load from
      * @throws Exception if the image format is not supported,
      *  or the file cannot be opened.
      */
-    protected function loadImageData(string $filename = null)
+    protected function loadImageData($filename = null)
     {
         if ($filename === null) {
             /* Set to blank image */
             return parent::loadImageData($filename);
         }
     
-        $im = $this -> getImageFromFile($filename);
+        $im = $im = $this -> getImageFromFile($filename);
         $this -> readImageFromImagick($im);
     }
 
@@ -108,15 +108,15 @@ class ImagickEscposImage extends EscposImage
      *          Height of printed line in dots. 8 or 24.
      * @return string[]
      */
-    private function getColumnFormatFromImage(Imagick $im, int $lineHeight)
+    private function getColumnFormatFromImage(Imagick $im, $lineHeight)
     {
         $imgWidth = $im->getimagewidth();
         if ($imgWidth == $lineHeight) {
             // Return glob of this panel
-            return [$this -> getRasterBlobFromImage($im)];
+            return array($this -> getRasterBlobFromImage($im));
         } elseif ($imgWidth > $lineHeight) {
             // Calculations
-            $slicesLeft = (int)ceil($imgWidth / $lineHeight / 2); // TODO avoid use of floats with intdiv()
+            $slicesLeft = ceil($imgWidth / $lineHeight / 2);
             $widthLeft = $slicesLeft * $lineHeight;
             $widthRight = $imgWidth - $widthLeft;
             // Slice up (left)
@@ -133,7 +133,7 @@ class ImagickEscposImage extends EscposImage
         } else {
             /* Image is smaller than full width */
             $im -> extentimage($lineHeight, $im -> getimageheight(), 0, 0);
-            return [$this -> getRasterBlobFromImage($im)];
+            return array($this -> getRasterBlobFromImage($im));
         }
     }
 
@@ -148,11 +148,11 @@ class ImagickEscposImage extends EscposImage
     {
         $im = new Imagick();
         try {
-            $im -> setResourceLimit(6, 1); // Prevent libgomp1 segfaults, grumble grumble.
+            $im->setResourceLimit(6, 1); // Prevent libgomp1 segfaults, grumble grumble.
             $im -> readimage($filename);
-        } catch (\ImagickException $e) {
+        } catch (ImagickException $e) {
             /* Re-throw as normal exception */
-            throw new Exception($e -> getMessage());
+            throw new Exception($e);
         }
         return $im;
     }
@@ -204,24 +204,24 @@ class ImagickEscposImage extends EscposImage
      *
      * @param string $pdfFile
      *  The file to load
-     * @param int $pageWidth
+     * @param string $pageWidth
      *  The width, in pixels, of the printer's output. The first page of the
      *  PDF will be scaled to approximately fit in this area.
      * @throws Exception Where Imagick is not loaded, or where a missing file
      *  or invalid page number is requested.
-     * @return array Array of images, retrieved from the PDF file.
+     * @return multitype:EscposImage Array of images, retrieved from the PDF file.
      */
-    public static function loadPdf($pdfFile, int $pageWidth = 550)
+    public static function loadPdf($pdfFile, $pageWidth = 550)
     {
         if (!EscposImage::isImagickLoaded()) {
             throw new Exception(__FUNCTION__ . " requires imagick extension.");
         }
         /*
-         * Load first page at very low density (resolution), to figure out what
-         * density to use to achieve $pageWidth
-         */
+    	 * Load first page at very low density (resolution), to figure out what
+    	 * density to use to achieve $pageWidth
+    	 */
         try {
-            $image = new Imagick();
+            $image = new \Imagick();
             $testRes = 2; // Test resolution
             $image -> setresolution($testRes, $testRes);
             /* Load document just to measure geometry */
@@ -235,7 +235,7 @@ class ImagickEscposImage extends EscposImage
             $image -> readImage($pdfFile);
             $pages = $image -> getNumberImages();
             /* Convert images to Escpos objects */
-            $ret = [];
+            $ret = array();
             for ($i = 0; $i < $pages; $i++) {
                 $image -> setIteratorIndex($i);
                 $ep = new ImagickEscposImage();
@@ -246,7 +246,7 @@ class ImagickEscposImage extends EscposImage
         } catch (\ImagickException $e) {
             /* Wrap in normal exception, so that classes which call this do not
              * themselves require imagick as a dependency. */
-            throw new Exception($e -> getMessage());
+            throw new Exception($e);
         }
     }
 
@@ -264,9 +264,9 @@ class ImagickEscposImage extends EscposImage
      */
     private static function alphaRemove(Imagick $im)
     {
-        $flat = new Imagick();
+        $flat = new \Imagick();
         $flat -> newImage($im -> getimagewidth(), $im -> getimageheight(), "white", $im -> getimageformat());
-        $flat -> compositeimage($im, Imagick::COMPOSITE_OVER, 0, 0);
+        $flat -> compositeimage($im, \Imagick::COMPOSITE_OVER, 0, 0);
         return $flat;
     }
 }

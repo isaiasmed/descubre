@@ -12,8 +12,9 @@ $productos = $_POST["productos"];
 $productos = json_decode($productos);
 $total = $_POST["total"];
 $cambio = $_POST["cambio"];
+$cliente = $_POST["cliente"];
 $ticket = $_POST["ticket"];
 $ticket = json_decode($ticket);
-$resultado = hacer_venta( $productos, $total, $ticket, $cambio );
+$resultado = hacer_venta( $productos, $total, $ticket, $cliente, $cambio );
 echo json_encode($resultado);
 ?>

@@ -15,9 +15,10 @@ var productos_vender = [],
     puede_salir = true,
     total = 0,
     intervalo_ayudante_nprogress,
-    TECLA_F1 = 112,
+    TECLA_F1 = 112,f
     TECLA_F2 = 113,
     TECLA_F3 = 114,
+    TECLA_F4 = 115,
     TECLA_F8 = 119,
     TECLA_ENTER = 13,
     TECLA_MENOS = 109,
@@ -79,11 +80,16 @@ function isInt(n) {
 
 
 function principal() {
+    // Seleccionar todo el contenido del input #cliente al hacer foco
+    $("#cliente").on("focus", function() {
+        $(this).select();
+    });
+    
     autocompletado_input();
     escuchar_elementos();
-    $("#codigo_producto").focus();
     dibujar_productos();
     $("li#elem_ventas").addClass("active");
+    $("#cliente").focus();
 }
 
 
@@ -125,6 +131,9 @@ function agrega_producto_local(producto) {
             producto.familia,
             producto.precio_compra
         );
+        if (producto.agregar === 1) {
+            _producto.items = producto.items;
+        }
         productos_vender.push(_producto);
         ayudante_posicion++;
     }
@@ -202,6 +211,25 @@ function dibujar_productos() {
         );
     var ayudante_total = 0;
     for (var i = productos_vender.length - 1; i >= 0; i--) {
+        
+        $ing = '';
+        if (productos_vender[i].hasOwnProperty('items') && productos_vender[i].items.length > 0) {
+            $ing = '';
+            for (var j = 0; j < productos_vender[i].cantidad; j++) {
+                $ing += '<span style="display: block;border: 1px solid #ddd;padding: 5px;margin-top: 10px;">';
+                productos_vender[i].items.forEach(function(item, index) {
+                    if (item.nombre === "Guisado") {
+                        $ing += '<select class="guisado-select" name="productos[' + i + '][items][' + j + '][' + index + ']" data-item-id="' + item.id_agregar + '">';
+                        $ing += '<option value="">Seleccione un guisado</option>';
+                        // Aquí deberías agregar opciones del select con los guisados de la base de datos
+                        $ing += '</select>';
+                    } else {
+                        $ing += '<label><input type="checkbox" checked class="item-checkbox ingre" name="productos[' + i + '][items][' + j + '][' + index + ']" data-item-id="' + item.id_agregar + '"> ' + item.item + '</label><br>';
+                    }
+                });
+                $ing += '</span>';
+            }
+        }
         ayudante_total += productos_vender[i].total;
         $("#contenedor_tabla tbody")
             .append(
@@ -211,7 +239,7 @@ function dibujar_productos() {
                             .html(productos_vender[i].codigo),
 
                         $("<td>")
-                            .html(productos_vender[i].nombre),
+                            .html(productos_vender[i].nombre + $ing),
 
                         $("<td>")
                             .html("$" + productos_vender[i].precio_venta),
@@ -254,7 +282,6 @@ function dibujar_productos() {
 $('.addProd').click(function(){
     var e = $.Event("keypress");
     e.keyCode = 13; // # Some key code value
-    console.log(e);
     $('#codigo_producto').val($(this).data('prod'));
     comprueba_si_existe_codigo($(this).data('prod'));
 });
@@ -275,7 +302,7 @@ function habilita_para_venta() {
     $("input, button").prop("disabled", false);
     puede_salir = true;
 }
-function realizar_venta(productos, total, cambio, ticket) {
+function realizar_venta(productos, total, cambio, cliente, ticket) {
     cambio = parseFloat(cambio);
     if (cambio < 0) cambio = 0;
     deshabilita_para_venta();
@@ -296,7 +323,8 @@ function realizar_venta(productos, total, cambio, ticket) {
         "productos": productos,
         "total": total,
         "ticket": ticket,
-        "cambio": cambio
+        "cambio": cambio,
+        "cliente": cliente
     }, function (respuesta) {
         habilita_para_venta();
         ayudante_posicion = 0;
@@ -307,7 +335,7 @@ function realizar_venta(productos, total, cambio, ticket) {
                     $("<i>")
                         .addClass('fa fa-check-square')
                 )
-                .append(" ¡Venta correcta!")
+                .append(" ¡Venta correcta! ")
                 .removeClass('btn-warning btn-info')
                 .addClass('btn-info');
             $("#modal_procesar_venta").modal("hide");
@@ -361,6 +389,10 @@ function escuchar_elementos() {
     $("#cancelar_toda_la_venta").click(function () {
         cancelar_venta();
     });
+     $("#mod_cliente").click(function () {
+        $("#cliente").focus();
+    });
+    
     $("#pago_usuario").keyup(function (evento) {
         $(this).parent().removeClass('has-error');
         var pago = $(this).val(),
@@ -372,7 +404,10 @@ function escuchar_elementos() {
         }
         if (evento.keyCode === 13) {
             if (cambio >= 0 && !isNaN(pago)) {
-                realizar_venta(productos_vender, total, cambio, $("#imprimir_ticket").prop("checked"));
+                var cliente =$("#cliente").val();
+                var ingredientes =$(".ingre").serializeArray();
+                console.log(ingredientes);
+                realizar_venta(productos_vender, total, cambio,cliente, $("#imprimir_ticket").prop("checked"));
             } else {
                 $(this).animateCss("shake");
                 $(this).parent().addClass('has-error');
@@ -384,7 +419,10 @@ function escuchar_elementos() {
         var pago = $("#pago_usuario").val(),
             cambio = pago - total;
         if (cambio >= 0 && !isNaN(pago)) {
-            realizar_venta(productos_vender, total, cambio, $("#imprimir_ticket").prop("checked"));
+            var cliente =$("#cliente").val();
+            var ingredientes =$(".ingre").serializeArray();
+            console.log(ingredientes);
+            realizar_venta(productos_vender, total, cambio, cliente , $("#imprimir_ticket").prop("checked"));
         } else {
             $("#pago_usuario").animateCss("shake");
             $("#pago_usuario").parent().addClass('has-error');
@@ -406,6 +444,10 @@ function escuchar_elementos() {
         if (evento.ctrlKey) evento.preventDefault();
         switch (evento.keyCode) {
             case TECLA_F3:
+                preparar_para_realizar_venta();
+                evento.preventDefault();
+                break;
+            case TECLA_F1:
                 comienza_venta();
                 evento.preventDefault();
                 break;
@@ -449,6 +491,10 @@ function escuchar_elementos() {
                 break;
             case TECLA_F3:
                 comienza_venta();
+                evento.preventDefault();
+                break;
+            case TECLA_F4:
+                $('#cliente').focus();
                 evento.preventDefault();
                 break;
             case TECLA_MENOS:

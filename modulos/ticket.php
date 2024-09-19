@@ -18,7 +18,7 @@ function abre_cajon()
     $printer->close();
 }
 
-function imprime_ticket($productos, $id_venta, $cambio)
+function imprime_ticket($productos, $id_venta, $cambio, $client )
 {
 
 	
@@ -158,6 +158,15 @@ function imprime_ticket($productos, $id_venta, $cambio)
        $printer -> setTextSize(2, 2);
        $printer->text("ORDEN #" . $id_venta);
        $printer->feed(2);
+       $printer -> setTextSize(2, 1);
+       
+       $printer->text("***********************");
+       $printer->feed();
+       $printer -> setTextSize(2, 2);
+       $printer->text($client);
+       $printer->feed();
+       $printer -> setTextSize(2, 1);
+       $printer->text("***********************");
        $printer->setJustification(Printer::JUSTIFY_LEFT);
        $printer->text("\n");
        $printer->feed(2);

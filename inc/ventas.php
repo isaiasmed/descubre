@@ -28,6 +28,12 @@
                         <span class="hidden-xs"><kbd>F3</kbd> Comenzar Venta</span>
                     </button>
                 </div>
+                <div class="btn-group">
+                    <button id="mod_cliente" type="button" class="btn btn-info" style="background:#011759;border: 1px solid #011759;">
+                        <i class="fa-ban fa visible-xs"></i>
+                        <span class="hidden-xs"><kbd>F4</kbd> Comenzar Venta</span>
+                    </button>
+                </div>
 				<div class="btn-group">
                     <button id="cancelar_toda_la_venta" type="button" class="btn btn-default" disabled>
                         <i class="fa-ban fa visible-xs"></i>
@@ -36,10 +42,15 @@
                 </div>
             </div>
             <div class="form-group">
+                <label for="cliente">Nombre o referencia cliente</label>
+                <input class="form-control" type="text" id="cliente" value="PUBLICO GENERAL"
+                       placeholder="Cliente">
+            </div>
+            <div class="form-group">
                 <label for="codigo_producto">Comienza a escribir o escanea el código</label>
                 <input class="form-control" type="text" id="codigo_producto"
                        placeholder="Comienza a escribir o escanea el código">
-            </div>
+            </div>            
             <h1 hidden="hidden"><strong>Total: </strong><span id="contenedor_total"></span></h1>
         </div>
     </div>

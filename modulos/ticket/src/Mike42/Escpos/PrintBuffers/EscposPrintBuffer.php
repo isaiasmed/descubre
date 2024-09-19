@@ -1,18 +1,22 @@
 <?php
+
 /**
  * This file is part of escpos-php: PHP receipt printer library for use with
  * ESC/POS-compatible thermal and impact printers.
  *
- * Copyright (c) 2014-16 Michael Billington < michael.billington@gmail.com >,
+ * Copyright (c) 2014-20 Michael Billington < michael.billington@gmail.com >,
  * incorporating modifications by others. See CONTRIBUTORS.md for a full list.
  *
  * This software is distributed under the terms of the MIT license. See LICENSE.md
  * for details.
  */
 
+declare(strict_types=1);
+
 namespace Mike42\Escpos\PrintBuffers;
 
 use LogicException;
+use Mike42\Escpos\CodePage;
 use Mike42\Escpos\Printer;
 
 /**
@@ -28,29 +32,24 @@ class EscposPrintBuffer implements PrintBuffer
     const COMPRESS_CACHE = true;
 
     /**
-     * The input encoding of the buffer.
-     */
-    const INPUT_ENCODING = "UTF-8";
-
-    /**
-     * Un-recorgnised characters will be replaced with this.
+     * Un-recognised characters will be replaced with this.
      */
     const REPLACEMENT_CHAR = "?";
 
     /**
      * @var array $available
-     *  This array Maps ESC/POS character tables to names iconv encodings
+     * Map code points to printer-specific code page numbers which contain them
      */
     private $available = null;
 
     /**
      * @var array $encode
-     *  Maps of UTF-8 to code-pages
+     * Map code pages to a map of code points to encoding-specific characters 128-255
      */
     private $encode = null;
 
     /**
-     * @var Printer $printer
+     * @var Printer|null $printer
      *  Printer for output
      */
     private $printer;
@@ -84,42 +83,43 @@ class EscposPrintBuffer implements PrintBuffer
         }
     }
 
-    public function writeText($text)
+    public function writeText(string $text)
     {
-        if ($this -> printer == null) {
+        if ($this->printer == null) {
             throw new LogicException("Not attached to a printer.");
         }
-        if ($text == null) {
-            return;
+        // Normalize text - this replaces combining characters with composed glyphs, and also helps us eliminated bad UTF-8 early
+        $text = \Normalizer::normalize($text);
+        if ($text === false) {
+            throw new \Exception("Input must be UTF-8");
         }
-        if (!mb_detect_encoding($text, self::INPUT_ENCODING, true)) {
-            // Assume that the user has already put non-UTF8 into the target encoding.
-            return $this -> writeTextRaw($text);
-        }
-        $i = 0;
-        $j = 0;
-        $len = mb_strlen($text, self::INPUT_ENCODING);
-        while ($i < $len) {
-            $matching = true;
-            if (($encoding = $this -> identifyText(mb_substr($text, $i, 1, self::INPUT_ENCODING))) === false) {
-                // Un-encodeable text
-                $encoding = $this -> getPrinter() -> getCharacterTable();
+        // Iterate code points
+        $codePointIterator = \IntlBreakIterator::createCodePointInstance();
+        $codePointIterator->setText($text);
+        $encoding = $this->printer->getCharacterTable();
+        $currentBlock = [];
+        while ($codePointIterator->next() > 0) {
+            // Write each code point
+            $codePoint = $codePointIterator->getLastCodePoint();
+            // See if we need to change code pages
+            $matching = !isset($this->available[$codePoint]) || isset($this->encode[$encoding][$codePoint]);
+            if ($matching) {
+                $currentBlock[] = $codePoint;
+            } else {
+                // Write what we have
+                $this->writeTextUsingEncoding($currentBlock, $encoding);
+                // New encoding..
+                $encoding = self::identifyText($codePoint);
+                $currentBlock = [$codePoint];
             }
-            $i++;
-            $j = 1;
-            do {
-                $char = mb_substr($text, $i, 1, self::INPUT_ENCODING);
-                $matching = !isset($this -> available[$char]) || isset($this -> available[$char][$encoding]);
-                if ($matching) {
-                    $i++;
-                    $j++;
-                }
-            } while ($matching && $i < $len);
-            $this -> writeTextUsingEncoding(mb_substr($text, $i - $j, $j, self::INPUT_ENCODING), $encoding);
+        }
+        // Write out last bytes
+        if (count($currentBlock) != 0) {
+            $this->writeTextUsingEncoding($currentBlock, $encoding);
         }
     }
 
-    public function writeTextRaw($text)
+    public function writeTextRaw(string $text)
     {
         if ($this -> printer == null) {
             throw new LogicException("Not attached to a printer.");
@@ -128,52 +128,51 @@ class EscposPrintBuffer implements PrintBuffer
             return;
         }
         // Pass only printable characters
-        for ($i = 0; $i < strlen($text); $i++) {
+        $j = 0;
+        $l = strlen($text);
+        $outp = str_repeat(self::REPLACEMENT_CHAR, $l);
+        for ($i = 0; $i < $l; $i++) {
             $c = substr($text, $i, 1);
-            if (!self::asciiCheck($c, true)) {
-                $text[$i] = self::REPLACEMENT_CHAR;
+            if ($c == "\r") {
+                /* Skip past Windows line endings (raw usage). */
+                continue;
+            } elseif (self::asciiCheck($c, true)) {
+                $outp[$j] = $c;
             }
+            $j++;
         }
-        $this -> write($text);
+        $this -> write(substr($outp, 0, $j));
     }
 
     /**
      * Return an encoding which we can start to use for outputting this text.
      * Later parts of the text need not be included in the returned code page.
      *
-     * @param string $text Input text to check.
+     * @param int $codePoint Code point to check.
      * @return boolean|integer Code page number, or FALSE if the text is not
      *  printable on any supported encoding.
      */
-    private function identifyText($text)
+    private function identifyText(int $codePoint)
     {
-        // TODO Replace this with an algorithm to choose the encoding which will
-        //      encode the farthest into the string, to minimise code page changes.
-        $char = mb_substr($text, 0, 1, self::INPUT_ENCODING);
-        if (!isset($this -> available[$char])) {
+        if (!isset($this -> available[$codePoint])) {
             /* Character not available anywhere */
             return false;
         }
-        foreach ($this -> available[$char] as $encodingNo => $true) {
-            /* Return first code-page where it is available */
-            return $encodingNo;
-        }
-        return false;
+        return $this -> available[$codePoint];
     }
-    
+
     /**
      * Based on the printer's connector, compute (or load a cached copy of) maps
      * of UTF character to unicode characters for later use.
      */
     private function loadAvailableCharacters()
     {
-        $supportedCodePages = $this -> printer -> getPrinterCapabilityProfile() -> getSupportedCodePages();
         $profile = $this -> printer -> getPrinterCapabilityProfile();
-        $profileClass = explode("\\", get_class($profile));
-        $profileName = array_pop($profileClass);
+        $supportedCodePages = $profile -> getCodePages();
+        $profileName = $profile -> getId();
         $cacheFile = dirname(__FILE__) . "/cache/Characters-" . $profileName . ".ser" .
             (self::COMPRESS_CACHE ? ".z" : "");
-        $cacheKey = md5(serialize($supportedCodePages));
+        $cacheKey = $profile -> getCodePageCacheKey();
         /* Check for pre-generated file */
         if (file_exists($cacheFile)) {
             $cacheData = file_get_contents($cacheFile);
@@ -190,61 +189,41 @@ class EscposPrintBuffer implements PrintBuffer
                 }
             }
         }
+
         /* Generate conversion tables */
-        $encode = array();
-        $available = array();
-        $custom = $this -> printer -> getPrinterCapabilityProfile() -> getCustomCodePages();
-        
-        foreach ($supportedCodePages as $num => $characterMap) {
-            $encode[$num] = array();
-            if ($characterMap === false) {
+        $encodeLegacy = [];
+        $encode = [];
+        $available = [];
+
+        foreach ($supportedCodePages as $num => $codePage) {
+            $encodeLegacy[$num] = [];
+            if (!$codePage -> isEncodable()) {
                 continue;
-            } elseif (strpos($characterMap, ":") !== false) {
-                /* Load a pre-defined custom map (vendor-specific code pages) */
-                $i = strpos($characterMap, ":");
-                if (substr($characterMap, 0, $i) !== "custom") {
+            }
+            $map = $codePage -> getDataArray();
+            $encodeMap = [];
+            for ($char = 128; $char <= 255; $char++) {
+                $codePoint = $map[$char - 128];
+                if ($codePoint == CodePage::MISSING_CHAR_CODE) { // Skip placeholders
                     continue;
                 }
-                $i++;
-                $mapName = substr($characterMap, $i, strlen($characterMap) - $i);
-                if (!isset($custom[$mapName]) || mb_strlen($custom[$mapName], self::INPUT_ENCODING) != 128) {
-                    throw new Exception("Capability profile referenced invalid custom map '$mapName'.");
-                }
-                $map = $custom[$mapName];
-                for ($char = 128; $char <= 255; $char++) {
-                    $utf8 = mb_substr($map, $char - 128, 1, self::INPUT_ENCODING);
-                    if ($utf8 == " ") { // Skip placeholders
-                        continue;
-                    }
-                    if (!isset($available[$utf8])) {
-                        $available[$utf8] = array();
-                    }
-                    $available[$utf8][$num] = true;
-                    $encode[$num][$utf8] = chr($char);
-                }
-            } else {
-                /* Generate map using iconv */
-                for ($char = 128; $char <= 255; $char++) {
-                    $utf8 = @iconv($characterMap, self::INPUT_ENCODING, chr($char));
-                    if ($utf8 == '') {
-                        continue;
-                    }
-                    if (iconv(self::INPUT_ENCODING, $characterMap, $utf8) != chr($char)) {
-                        // Avoid non-canonical conversions
-                        continue;
-                    }
-                    if (!isset($available[$utf8])) {
-                        $available[$utf8] = array();
-                    }
-                    $available[$utf8][$num] = true;
-                    $encode[$num][$utf8] = chr($char);
+                $encodeMap[$codePoint] = $char;
+                if (!isset($available[$codePoint])) {
+                    $available[$codePoint] = $num;
                 }
             }
+            $encode[$num] = $encodeMap;
         }
+        
         /* Use generated data */
-        $dataArray = array("available" => $available, "encode" => $encode, "key" => $cacheKey);
-        $this -> available = $dataArray["available"];
-        $this -> encode = $dataArray["encode"];
+        $dataArray = [
+            "available" => $available,
+            "encode" => $encode,
+            "key" => $cacheKey
+        ];
+        $this -> available = $available;
+        $this -> encode = $encode;
+
         $cacheData = serialize($dataArray);
         if (self::COMPRESS_CACHE) {
             $cacheData = gzcompress($cacheData);
@@ -256,26 +235,35 @@ class EscposPrintBuffer implements PrintBuffer
     /**
      * Encode a block of text using the specified map, and write it to the printer.
      *
-     * @param string $text Text to print, UTF-8 format.
+     * @param array $codePoints Text to print, as list of unicode code points
      * @param integer $encodingNo Encoding number to use- assumed to exist.
      */
-    private function writeTextUsingEncoding($text, $encodingNo)
+    private function writeTextUsingEncoding(array $codePoints, int $encodingNo)
     {
         $encodeMap = $this -> encode[$encodingNo];
-        $len = mb_strlen($text, self::INPUT_ENCODING);
+        $len = count($codePoints);
+
         $rawText = str_repeat(self::REPLACEMENT_CHAR, $len);
+        $bytesWritten = 0;
+        $cr = 0x0D; // extra character from line endings on Windows
         for ($i = 0; $i < $len; $i++) {
-            $char = mb_substr($text, $i, 1, self::INPUT_ENCODING);
-            if (isset($encodeMap[$char])) {
-                $rawText[$i] = $encodeMap[$char];
-            } elseif (self::asciiCheck($char)) {
-                $rawText[$i] = $char;
+            $codePoint = $codePoints[$i];
+            if (isset($encodeMap[$codePoint])) {
+                // Printable via selected code page
+                $rawText[$bytesWritten] = chr($encodeMap[$codePoint]);
+            } elseif (($codePoint > 31 && $codePoint < 127) || $codePoint == 10) {
+                // Printable as ASCII
+                $rawText[$bytesWritten] = chr($codePoint);
+            } elseif ($codePoint === $cr) {
+                // Skip past Windows line endings, LF is fine
+                continue;
             }
+            $bytesWritten++;
         }
         if ($this -> printer -> getCharacterTable() != $encodingNo) {
             $this -> printer -> selectCharacterTable($encodingNo);
         }
-        $this -> writeTextRaw($rawText);
+        $this -> writeTextRaw(substr($rawText, 0, $bytesWritten));
     }
 
     /**
@@ -283,7 +271,7 @@ class EscposPrintBuffer implements PrintBuffer
      *
      * @param string $data
      */
-    private function write($data)
+    private function write(string $data)
     {
         $this -> printer -> getPrintConnector() -> write($data);
     }
@@ -295,7 +283,7 @@ class EscposPrintBuffer implements PrintBuffer
      * @param boolean $extended True to allow 128-256 values also (excluded by default)
      * @return boolean True if the character is printable, false if it is not.
      */
-    private static function asciiCheck($char, $extended = false)
+    private static function asciiCheck(string $char, bool $extended = false)
     {
         if (strlen($char) != 1) {
             // Multi-byte string

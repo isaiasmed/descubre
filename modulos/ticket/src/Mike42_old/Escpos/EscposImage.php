@@ -1,25 +1,19 @@
 <?php
-
 /**
  * This file is part of escpos-php: PHP receipt printer library for use with
  * ESC/POS-compatible thermal and impact printers.
  *
- * Copyright (c) 2014-20 Michael Billington < michael.billington@gmail.com >,
+ * Copyright (c) 2014-16 Michael Billington < michael.billington@gmail.com >,
  * incorporating modifications by others. See CONTRIBUTORS.md for a full list.
  *
  * This software is distributed under the terms of the MIT license. See LICENSE.md
  * for details.
  */
 
-declare(strict_types=1);
-
 namespace Mike42\Escpos;
 
 use Exception;
 use InvalidArgumentException;
-use Mike42\Escpos\GdEscposImage;
-use Mike42\Escpos\ImagickEscposImage;
-use Mike42\Escpos\NativeEscposImage;
 
 /**
  * This class deals with images in raster formats, and converts them into formats
@@ -62,13 +56,13 @@ abstract class EscposImage
     private $imgData = null;
     
     /**
-     * @var array:string $imgColumnData
+     * @var string $imgColumnData
      *  Cached column-format data to avoid re-computation
      */
-    private $imgColumnData = [];
+    private $imgColumnData = array();
     
     /**
-     * @var string $imgRasterData
+     * @var array:string $imgRasterData
      *  Cached raster format data to avoid re-computation
      */
     private $imgRasterData = null;
@@ -170,35 +164,34 @@ abstract class EscposImage
      */
     public function toColumnFormat($doubleDensity = false)
     {
-        $densityIdx = $doubleDensity ? 1 : 0;
         // Just wraps implementations for caching and lazy loading
-        if (isset($this -> imgColumnData[$densityIdx])) {
+        if (isset($this -> imgColumnData[$doubleDensity])) {
             /* Return cached value */
-            return $this -> imgColumnData[$densityIdx];
+            return $this -> imgColumnData[$doubleDensity];
         }
-        $this -> imgColumnData[$densityIdx] = null;
+        $this -> imgColumnData[$doubleDensity] = null;
         if ($this -> allowOptimisations) {
             /* Use optimised code if allowed */
             $data = $this -> getColumnFormatFromFile($this -> filename, $doubleDensity);
-            $this -> imgColumnData[$densityIdx] = $data;
+            $this -> imgColumnData[$doubleDensity] = $data;
         }
-        if ($this -> imgColumnData[$densityIdx] === null) {
+        if ($this -> imgColumnData[$doubleDensity] === null) {
             /* Load in full image and render the slow way if no faster implementation
              is available, or if we've been asked not to use it */
             if ($this -> imgData === null) {
                 $this -> loadImageData($this -> filename);
             }
-            $this -> imgColumnData[$densityIdx] = $this -> getColumnFormat($doubleDensity);
+            $this -> imgColumnData[$doubleDensity] = $this -> getColumnFormat($doubleDensity);
         }
-        return $this -> imgColumnData[$densityIdx];
+        return $this -> imgColumnData[$doubleDensity];
     }
 
     /**
      * Load an image from disk. This default implementation always gives a zero-sized image.
      *
-     * @param string|null $filename Filename to load from.
+     * @param string $filename Filename to load from.
      */
-    protected function loadImageData(string $filename = null)
+    protected function loadImageData($filename = null)
     {
         // Load image in to string of 1's and 0's, also set width & height
         $this -> setImgWidth(0);
@@ -318,9 +311,9 @@ abstract class EscposImage
      * @return string[]
      *  Array of column format data, one item per row.
      */
-    private function getColumnFormat(bool $highDensity)
+    private function getColumnFormat($highDensity)
     {
-        $out = [];
+        $out = array();
         $i = 0;
         while (($line = $this -> getColumnFormatLine($i, $highDensity)) !== null) {
             $out[] = $line;
@@ -332,16 +325,16 @@ abstract class EscposImage
     /**
      * Output image in column format. Must be called once for each line of output.
      *
-     * @param int $lineNo
+     * @param string $lineNo
      *  Line number to retrieve
-     * @param bool $highDensity
+     * @param string $highDensity
      *  True for high density output (24px lines), false for regular density (8px)
      * @throws Exception
      *  Where wrong number of bytes has been generated.
      * @return NULL|string
      *  Column format data, or null if there is no more data (when iterating)
      */
-    private function getColumnFormatLine(int $lineNo, bool $highDensity)
+    private function getColumnFormatLine($lineNo, $highDensity)
     {
         // Currently double density in both directions, very experimental
         $widthPixels = $this -> getWidth();
@@ -414,7 +407,7 @@ abstract class EscposImage
      *
      * @param string $filename
      *  File to load from
-     * @param bool $allowOptimisations
+     * @param string $allow_optimisations
      *  True to allow the fastest rendering shortcuts, false to force the library
      *  to read the image into an internal raster format and use PHP to render
      *  the image (slower but less fragile).
@@ -427,9 +420,9 @@ abstract class EscposImage
      *
      */
     public static function load(
-        string $filename,
-        bool $allowOptimisations = true,
-        array $preferred = ['imagick', 'gd', 'native']
+        $filename,
+        $allow_optimisations = true,
+        array $preferred = array('imagick', 'gd', 'native')
     ) {
         /* Fail early if file is not readble */
         if (!file_exists($filename) || !is_readable($filename)) {
@@ -437,28 +430,28 @@ abstract class EscposImage
         }
         $ext = pathinfo($filename, PATHINFO_EXTENSION);
         /* Choose the first implementation which can handle this format */
-        foreach ($preferred as $implementation) {
-            if ($implementation === 'imagick') {
+        foreach ($preferred as $implemetnation) {
+            if ($implemetnation === 'imagick') {
                 if (!self::isImagickLoaded()) {
                     // Skip option if Imagick is not loaded
                     continue;
                 }
-                return new ImagickEscposImage($filename, $allowOptimisations);
-            } elseif ($implementation === 'gd') {
+                return new \Mike42\Escpos\ImagickEscposImage($filename, $allow_optimisations);
+            } elseif ($implemetnation === 'gd') {
                 if (!self::isGdLoaded()) {
                     // Skip option if GD not loaded
                     continue;
                 }
-                return new GdEscposImage($filename, $allowOptimisations);
-            } elseif ($implementation === 'native') {
-                if (!in_array($ext, ['bmp', 'gif', 'pbm', 'png', 'ppm', 'pgm', 'wbmp'])) {
-                    // Pure PHP may also be fastest way to generate raster output from wbmp and pbm formats.
+                return new \Mike42\Escpos\GdEscposImage($filename, $allow_optimisations);
+            } elseif ($implemetnation === 'native') {
+                if (!in_array($ext, array('wbmp', 'pbm', 'bmp'))) {
+                    // Pure PHP is fastest way to generate raster output from wbmp and pbm formats.
                     continue;
                 }
-                return new NativeEscposImage($filename, $allowOptimisations);
+                return new \Mike42\Escpos\NativeEscposImage($filename, $allow_optimisations);
             } else {
                 // Something else on the 'preferred' list.
-                throw new InvalidArgumentException("'$implementation' is not a known EscposImage implementation");
+                throw new InvalidArgumentException("'$implemetnation' is not a known EscposImage implementation");
             }
         }
         throw new InvalidArgumentException("No suitable EscposImage implementation found for '$filename'.");
