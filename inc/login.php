@@ -55,7 +55,7 @@
                         .addClass('btn-success')
                         .animateCss("bounceOut");
                     setTimeout(function () {
-                        window.location.reload();
+                        window.location.href = './';
                     }, 200);
                 } else {
                     $("#iniciar_sesion")

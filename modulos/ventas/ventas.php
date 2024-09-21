@@ -48,7 +48,7 @@ function consultar_todas_las_ventas($fecha_inicio, $fecha_fin, $familia)
 }
 
 
-function hacer_venta($productos, $total, $ticket, $cliente, $cambio)
+function hacer_venta($productos, $total, $ticket, $cliente, $cambio, $tipo, $ingredientes)
 {
     global $base_de_datos;
     require_once "../inventario/inventario.php";
@@ -56,14 +56,14 @@ function hacer_venta($productos, $total, $ticket, $cliente, $cambio)
     $todo_correcto = true;
     foreach ($productos as $producto) {
         $todo_correcto = $todo_correcto and quitar_piezas($producto->cantidad, $producto->rowid);
-        $sentencia = $base_de_datos->prepare("INSERT INTO ventas(numero_venta, codigo_producto, nombre_producto, total, fecha, numero_productos, usuario, familia, utilidad,cliente) VALUES (?,?,?,?,?,?,?, ?, ?, ?);");
-        $resultado_sentencia = $sentencia->execute(array($numero_venta, $producto->codigo, $producto->nombre, $producto->cantidad * $producto->precio_venta, date("Y-m-d H:i:s"), $producto->cantidad, $_SESSION["nombre_de_usuario"], $producto->familia, $producto->utilidad * $producto->cantidad,$cliente));
+        $sentencia = $base_de_datos->prepare("INSERT INTO ventas(numero_venta, codigo_producto, nombre_producto, total, fecha, numero_productos, usuario, familia, utilidad,cliente, tipo) VALUES (?,?,?,?,?,?,?, ?, ?, ?,?);");
+        $resultado_sentencia = $sentencia->execute(array($numero_venta, $producto->codigo, $producto->nombre, $producto->cantidad * $producto->precio_venta, date("Y-m-d H:i:s"), $producto->cantidad, $_SESSION["nombre_de_usuario"], $producto->familia, $producto->utilidad * $producto->cantidad,$cliente, $tipo));
         $todo_correcto = $todo_correcto and $resultado_sentencia;
     }
     $todo_correcto = $todo_correcto and ingresar_dinero_venta_caja($total, $numero_venta);
     if ($ticket === TRUE) {
         include "../ticket.php";
-        imprime_ticket($productos, $numero_venta, $cambio, $cliente);
+        imprime_ticket($productos, $numero_venta, $cambio, $cliente, $tipo, $ingredientes);
     }
     return $todo_correcto;
 }

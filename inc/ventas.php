@@ -83,8 +83,17 @@
                 <h4 class="modal-title">Realizar venta</h4>
             </div>
             <div class="modal-body">
+                <div class="form-group">
+                    <label for="tipo">Tipo de pago</label>
+                    <select id="tipo" class="form-control">
+                        <option value="Transferencia">Transferencia</option>
+                        <option value="Efectivo">Efectivo</option>
+                        <option value="TPV">TPV</option>
+                        <option value="Crédito">Crédito</option>
+                    </select>
+                </div>
                 <h2 hidden="hidden"><strong>Total: </strong><span id="contenedor_total_modal"></span></h2>
-                <div class="row">
+                <div id="defectivo" class="row" style="display:none;s">
                     <div class="form-group">
                         <div class="col-xs-12 col-md-10">
                             <label for="pago_usuario">El cliente paga con...</label>
@@ -100,8 +109,8 @@
                             </label>
                         </div>
                     </div>
+                    <h2 hidden="hidden">Cambio: <span id="contenedor_cambio"></span></h2>
                 </div>
-                <h2 hidden="hidden">Cambio: <span id="contenedor_cambio"></span></h2>
             </div>
             <div class="modal-footer">
                 <div class="row">

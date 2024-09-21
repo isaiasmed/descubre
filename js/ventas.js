@@ -224,7 +224,7 @@ function dibujar_productos() {
                         // Aquí deberías agregar opciones del select con los guisados de la base de datos
                         $ing += '</select>';
                     } else {
-                        $ing += '<label><input type="checkbox" checked class="item-checkbox ingre" name="productos[' + i + '][items][' + j + '][' + index + ']" data-item-id="' + item.id_agregar + '"> ' + item.item + '</label><br>';
+                        $ing += '<label><input type="checkbox" checked class="item-checkbox ingre" name="productos[' + i + '][items][' + item.item + ']" data-item-id="' + item.id_agregar + '"> ' + item.item + '</label><br>';
                     }
                 });
                 $ing += '</span>';
@@ -288,9 +288,14 @@ $('.addProd').click(function(){
 
 
 
+
+
 function preparar_para_realizar_venta() {
     if (productos_vender.length > 0) {
         $("#modal_procesar_venta").modal("show");
+        // Establecer el valor por defecto del select #tipo a ""
+        $("#tipo").val("Efectivo");
+        $("#defectivo").show();
         $("#contenedor_total_modal").text("$" + total).parent().show();
     }   
 }
@@ -302,7 +307,7 @@ function habilita_para_venta() {
     $("input, button").prop("disabled", false);
     puede_salir = true;
 }
-function realizar_venta(productos, total, cambio, cliente, ticket) {
+function realizar_venta(productos, total, cambio, cliente, ticket, tipo,ingredientes) {
     cambio = parseFloat(cambio);
     if (cambio < 0) cambio = 0;
     deshabilita_para_venta();
@@ -317,6 +322,8 @@ function realizar_venta(productos, total, cambio, cliente, ticket) {
     productos = JSON.stringify(productos);
     ticket = JSON.stringify(ticket);
     ticket = true;
+    tipo = $("#tipo").val();
+    ingredientes = JSON.stringify(ingredientes);
     var numero_productos = dame_total_productos_locales();
     if (!EL_CLIENTE_USA_TICKET) ticket = false;
     $.post('./modulos/ventas/realizar_venta.php', {
@@ -324,7 +331,9 @@ function realizar_venta(productos, total, cambio, cliente, ticket) {
         "total": total,
         "ticket": ticket,
         "cambio": cambio,
-        "cliente": cliente
+        "cliente": cliente,
+        "tipo": tipo,
+        "ingredientes": ingredientes
     }, function (respuesta) {
         habilita_para_venta();
         ayudante_posicion = 0;
@@ -373,6 +382,18 @@ function cambia_cantidad() {
 
 
 function escuchar_elementos() {
+    $("#tipo").change(function() {
+        if ($(this).val() !== "Efectivo") {
+            var totalSinSigno = $("#contenedor_total_modal").text().replace("$", "");
+            $("#pago_usuario").val(totalSinSigno*1);
+            $("#defectivo").hide();
+        } else {
+            $("#pago_usuario").val("");
+            $("#defectivo").show();
+        }
+    });
+
+
     $("#imprimir_ticket").click(function () {
         $("#pago_usuario").focus();
     });
@@ -406,8 +427,10 @@ function escuchar_elementos() {
             if (cambio >= 0 && !isNaN(pago)) {
                 var cliente =$("#cliente").val();
                 var ingredientes =$(".ingre").serializeArray();
+                console.log("Ingredientes");
                 console.log(ingredientes);
-                realizar_venta(productos_vender, total, cambio,cliente, $("#imprimir_ticket").prop("checked"));
+                var tipo = $("#tipo").val();
+                realizar_venta(productos_vender, total, cambio,cliente, $("#imprimir_ticket").prop("checked"),tipo, ingredientes);
             } else {
                 $(this).animateCss("shake");
                 $(this).parent().addClass('has-error');
@@ -421,8 +444,9 @@ function escuchar_elementos() {
         if (cambio >= 0 && !isNaN(pago)) {
             var cliente =$("#cliente").val();
             var ingredientes =$(".ingre").serializeArray();
-            console.log(ingredientes);
-            realizar_venta(productos_vender, total, cambio, cliente , $("#imprimir_ticket").prop("checked"));
+            console.table(ingredientes);
+            var tipo=$("#tipo").val();
+            realizar_venta(productos_vender, total, cambio, cliente , $("#imprimir_ticket").prop("checked"),tipo,  ingredientes);
         } else {
             $("#pago_usuario").animateCss("shake");
             $("#pago_usuario").parent().addClass('has-error');
