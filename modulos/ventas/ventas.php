@@ -50,6 +50,8 @@ function consultar_todas_las_ventas($fecha_inicio, $fecha_fin, $familia)
 
 function hacer_venta($productos, $total, $ticket, $cliente, $cambio, $tipo, $ingredientes)
 {
+    // Establecer la zona horaria a Ciudad de México
+    date_default_timezone_set('America/Mexico_City');
     global $base_de_datos;
     require_once "../inventario/inventario.php";
     $numero_venta = ultimo_numero_de_venta();
