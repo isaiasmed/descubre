@@ -145,11 +145,13 @@ function imprime_ticket($productos, $id_venta, $cambio, $client, $tipo, $ingredi
 
             $printer->selectPrintMode(Printer::MODE_EMPHASIZED | Printer::MODE_FONT_B);
             $printer->text("------------------------------------\n \n ");
-        
-            $printer->text("SU PAGO $" . $ayudante_pago . "\n");
-            $printer->text("TOTAL");
-            $printer->setTextSize(3, 2);
-            $printer->text(" $" . $ayudante_total . "\n");
+             
+            if($tipo!='Museo'){
+            	$printer->text("SU PAGO $" . $ayudante_pago . "\n");
+            	$printer->text("TOTAL");
+            	$printer->setTextSize(3, 2);
+            	$printer->text(" $" . $ayudante_total . "\n");
+	    }
             
             if($tipo=="Crédito"){
                 $printer->feed();
@@ -189,12 +191,15 @@ function imprime_ticket($productos, $id_venta, $cambio, $client, $tipo, $ingredi
                 }
             }
             $printer->feed();
-            $printer->setJustification(Printer::JUSTIFY_RIGHT);
-            $printer->setTextSize(2, 1);
-            $printer->text("\n");
-            $printer->text("CAMBIO $" . $ayudante_cambio);
-            $printer->text("\n");
-            $printer->feed();
+
+	    if($tipo!='Museo'){
+            	$printer->setJustification(Printer::JUSTIFY_RIGHT);
+            	$printer->setTextSize(2, 1);
+            	$printer->text("\n");
+            	$printer->text("CAMBIO $" . $ayudante_cambio);
+            	$printer->text("\n");
+            	$printer->feed();
+            }
 
             /*Calculamos la hora para desearle buenos días, tardes o noches*/
             $hora = date("G");
