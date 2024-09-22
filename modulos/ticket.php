@@ -65,7 +65,7 @@ function imprime_ticket($productos, $id_venta, $cambio, $client, $tipo, $ingredi
 		$cc++;
        }
     }
-
+    $cc=1;
      /*Conectamos con la impresora*/
     $nombre_impresora = trim(file(__DIR__ . '/impresora.ini')[0]);
     $connector = new WindowsPrintConnector($nombre_impresora);
@@ -153,7 +153,7 @@ function imprime_ticket($productos, $id_venta, $cambio, $client, $tipo, $ingredi
             	$printer->text(" $" . $ayudante_total . "\n");
 	    }
             
-            if($tipo=="Crédito"){
+            if($tipo=="Crédito" || $tipo=="Museo"){
                 $printer->feed();
                 $printer->feed();
                 $printer->text("\n");
