@@ -17,6 +17,41 @@ function abre_cajon()
     $printer->pulse();
     $printer->close();
 }
+function imprime_codigo_cliente($cliente)
+{
+    // Incluir las funciones de base de datos
+    if (!defined("RAIZ")) {
+        define("RAIZ", dirname(dirname(__FILE__)));
+    }
+    require_once RAIZ . "/modulos/db.php";
+    global $base_de_datos;
+    $sentencia = $base_de_datos->prepare("SELECT cliente, tipo FROM clientes WHERE id = ?");
+    $sentencia->execute([$cliente]);
+    $datos_cliente = $sentencia->fetch();
+    
+    if (!$datos_cliente) {
+        return;
+    }
+    
+    $nombre_cliente = $datos_cliente['cliente'];
+    $tipo_cliente = $datos_cliente['tipo'];
+    $id_cliente = $cliente;
+    $nombre_impresora = trim(file(__DIR__ . '/impresora.ini')[0]);
+    $connector = new WindowsPrintConnector($nombre_impresora);
+    $printer = new Printer($connector);
+    $printer->setJustification(Printer::JUSTIFY_CENTER);
+    $codigo_texto = "***".$tipo_cliente . "|" . $id_cliente;
+    $printer->setBarcodeHeight(80);
+    $printer->setBarcodeWidth(2);
+    
+    // Preparamos el código para CODE128
+    $codigo_texto_valido = '{B' . str_replace('***', '', $codigo_texto);
+    // Usamos CODE128 con el código válido
+    $printer->barcode($codigo_texto_valido, Printer::BARCODE_CODE128);
+    $printer->text($codigo_texto . "\n");
+    $printer->cut();
+    $printer->close();
+}
 
 function imprime_ticket($productos, $id_venta, $cambio, $client, $tipo, $ingredientes )
 {

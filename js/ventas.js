@@ -438,6 +438,7 @@ function escuchar_elementos() {
         }
     });
 
+    
     $("#realizar_venta").click(function () {
         var pago = $("#pago_usuario").val(),
             cambio = pago - total;
@@ -497,6 +498,164 @@ function escuchar_elementos() {
         }
     });
 
+    // Limpiar el campo de búsqueda y los resultados al mostrar el modal de clientes
+    $('#modal_clientes').on('show.bs.modal', function () {
+        $("#buscando_cliente").val('');
+        $("#resultados_busqueda").empty();
+    });
+
+    $("#cliente").keydown(function (evento) {
+        console.log(evento);
+        if (evento.keyCode === TECLA_ENTER || evento.which === 13) {
+            evento.preventDefault();
+            var contenido = $(this).val().trim();
+            if (contenido.startsWith('***')) {
+                $.ajax({
+                    url: "./modulos/ventas/cliente.php?"+ contenido.substring(3, contenido.indexOf('|')) + "=" + contenido.substring(contenido.indexOf('|') + 1),
+                    method: 'GET',
+                    dataType: 'json',
+                    success: function(respuesta) {
+                        if (respuesta) {
+                            $("#cliente").val(respuesta.cliente);
+                            comprueba_si_existe_codigo(156845632);
+                            $("#tipo").val("Museo");
+                            $("#modal_procesar_venta").modal("show");
+                        } else {
+                            console.log("Cliente no encontrado");
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error("Error en la búsqueda del cliente:", error);
+                        $("#codigo_producto").focus();
+                    }
+                });
+            } else {
+                $("#codigo_producto").focus();
+            }
+        }
+    });
+    // Manejar el evento de clic en el botón de búsqueda de cliente
+    $("#btn_buscar_cliente").click(function() {
+        buscarCliente();
+    });
+
+    // Función para buscar cliente
+    function buscarCliente() {
+        var buscar = $("#buscando_cliente").val();
+        $.ajax({
+            url: "./modulos/ventas/buscar_cliente.php",
+            method: "POST",
+            data: { "busqueda": buscar },
+            dataType: "json",
+            success: function(respuesta) {
+                mostrarResultadosBusqueda(respuesta);
+            },
+            error: function(xhr, status, error) {
+                console.error("Error en la búsqueda del cliente:", error);
+            }
+        });
+    }
+
+    // Función para mostrar resultados de búsqueda
+    function mostrarResultadosBusqueda(clientes) {
+        var resultadosDiv = $("#resultados_busqueda");
+        resultadosDiv.empty();
+
+        if (clientes.length > 0) {
+            var lista = $("<ul>").addClass("list-group");
+            clientes.forEach(function(cliente) {
+                var item = $("<li>").addClass("list-group-item");
+                var span = $("<span>")
+                    .css({
+                        'color': '#040676',
+                        'text-decoration': 'underline',
+                        'cursor': 'pointer',
+                        'margin-left':'10px'
+                    })
+                    .text(cliente.cliente + " - " + cliente.tipo)
+                    .click(function() {
+                        seleccionarCliente(cliente.cliente);
+                    });
+                var boton = $("<button>")
+                    .addClass("btn btn-sm btn-info mr-4")
+                    .text("Imprimir Código")
+                    .css({
+                        'margin-right':'20px'
+                    })
+                    .click(function() {
+                        imprimirCodigoCliente(cliente.id);
+                    });
+                item.append(span).prepend(boton);
+                lista.append(item);
+            });
+            resultadosDiv.append(lista);
+        } else {
+            resultadosDiv.append("<p>No se encontraron resultados.</p>");
+        }
+    }
+
+    function imprimirCodigoCliente(idCliente) {
+        $.ajax({
+            url: "./modulos/ventas/imprimir_codigo_cliente.php",
+            method: "POST",
+            data: { id: idCliente },
+            success: function(response) {
+                console.log("Código de cliente impreso");
+            },
+            error: function(xhr, status, error) {
+                console.error("Error al imprimir código de cliente:", error);
+            }
+        });
+    }
+
+    // Función para seleccionar un cliente
+    function seleccionarCliente(cliente) {
+        $("#cliente").val(cliente);
+        $("#modal_clientes").modal("hide");
+        comprueba_si_existe_codigo(156845632);
+        $("#tipo").val("Museo");
+        $("#modal_procesar_venta").modal("show");
+        // Llamar a la función después de seleccionar un cliente
+        limpiarYOcultarFormularioCliente();
+    }
+
+    // Limpiar el formulario de agregar cliente y ocultarlo
+    function limpiarYOcultarFormularioCliente() {
+        $("#nombre_cliente").val("");
+        $("#tipo_cliente").val("guia"); // Establecer el valor predeterminado
+        $("#formulario_nuevo_cliente").hide();
+    }
+    
+    // Manejar el envío del formulario para agregar nuevo cliente
+    $("#form_nuevo_cliente").submit(function(e) {
+        e.preventDefault();
+        var nombre = $("#nombre_cliente").val();
+        var tipo = $("#tipo_cliente").val();
+
+        $.ajax({
+            url: "./modulos/ventas/agregar_cliente.php",
+            method: "POST",
+            data: { nombre: nombre, tipo: tipo },
+            dataType: "json",
+            success: function(respuesta) {
+                if (respuesta.exito) {
+                    alert("Cliente agregado con éxito");
+                    $("#modal_clientes").modal("hide");
+                    seleccionarCliente(nombre);
+                } else {
+                    alert("Error al agregar el cliente: " + respuesta.mensaje);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error("Error al agregar el cliente:", error);
+            }
+        });
+    });
+
+    // Acción para mostrar el formulario de agregar cliente
+    $("#btn_mostrar_formulario").click(function() {
+        $("#formulario_nuevo_cliente").slideToggle();
+    });
 
     $("#codigo_producto").keydown(function (evento) {
 

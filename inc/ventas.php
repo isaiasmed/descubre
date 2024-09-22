@@ -31,7 +31,7 @@
                 <div class="btn-group">
                     <button id="mod_cliente" type="button" class="btn btn-info" style="background:#011759;border: 1px solid #011759;">
                         <i class="fa-ban fa visible-xs"></i>
-                        <span class="hidden-xs"><kbd>F4</kbd> Comenzar Venta</span>
+                        <span class="hidden-xs"><kbd>F4</kbd> Cambiar Cliente</span>
                     </button>
                 </div>
 				<div class="btn-group">
@@ -43,8 +43,15 @@
             </div>
             <div class="form-group">
                 <label for="cliente">Nombre o referencia cliente</label>
-                <input class="form-control" type="text" id="cliente" value="PUBLICO GENERAL"
-                       placeholder="Cliente">
+                <div class="input-group">
+                    <input class="form-control" type="text" id="cliente" value="PUBLICO GENERAL"
+                           placeholder="Cliente">
+                    <span class="input-group-btn">
+                        <button class="btn btn-default" type="button" id="buscar_cliente" data-toggle="modal" data-target="#modal_clientes">
+                            <i class="fa fa-search"></i> Buscar
+                        </button>
+                    </span>
+                </div>
             </div>
             <div class="form-group">
                 <label for="codigo_producto">Comienza a escribir o escanea el código</label>
@@ -90,6 +97,7 @@
                         <option value="Efectivo">Efectivo</option>
                         <option value="TPV">TPV</option>
                         <option value="Crédito">Crédito</option>
+                        <option value="Museo">Museo</option>
                     </select>
                 </div>
                 <h2 hidden="hidden"><strong>Total: </strong><span id="contenedor_total_modal"></span></h2>
@@ -129,6 +137,62 @@
         </div>
     </div>
 </div>
+
+
+<!-- Modal para consultar y agregar clientes -->
+<div class="modal fade" id="modal_clientes" tabindex="-1" role="dialog" aria-labelledby="modalClientesLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="modalClientesLabel">Gestión de Clientes</h4>
+            </div>
+            <div class="modal-body">
+                <!-- Formulario para buscar clientes -->
+                <div class="form-group">
+                    <label for="buscar_cliente">Buscar cliente:</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="buscando_cliente" placeholder="Nombre o ID del cliente">
+                        <span class="input-group-btn">
+                            <button id="btn_buscar_cliente" class="btn btn-primary">Buscar</button>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Resultados de la búsqueda -->
+                <div id="resultados_busqueda" class="mt-3">
+                    <!-- Aquí se mostrarán los resultados de la búsqueda -->
+                </div>
+
+                <!-- Botón para mostrar el formulario -->
+                <button id="btn_mostrar_formulario" class="btn btn-primary mt-4">Mostrar formulario para agregar cliente</button>
+
+                <!-- Formulario para agregar nuevo cliente (oculto inicialmente) -->
+                <div id="formulario_nuevo_cliente" style="display: none;">
+                    <h5 class="mt-4">Agregar nuevo cliente</h5>
+                    <form id="form_nuevo_cliente">
+                        <div class="form-group">
+                            <label for="nombre_cliente">Nombre:</label>
+                            <input type="text" class="form-control" id="nombre_cliente" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="tipo_cliente">Tipo:</label>
+                            <select class="form-control" id="tipo_cliente" required>
+                                <option value="guia">Guía</option>
+                                <option value="aseo">Aseo</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-success">Agregar Cliente</button>
+                    </form>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <link rel="stylesheet" href="./css/eac.css">
-<script src="./js/ventas.js"></script>
+<script src="./js/ventas.js?i=1.<?php echo uniqid();?>"></script>
 <script src="./lib/eac.js"></script>

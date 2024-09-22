@@ -102,11 +102,38 @@ function comprueba_si_existe_codigo($codigo)
 }
 
 
+function comprueba_si_existe_cliente($codigo)
+{
+    global $base_de_datos;
+    $codigo=mb_strtoupper($codigo);
+    $sentencia = $base_de_datos->prepare("SELECT count(*) AS count FROM clientes WHERE id = ?;");
+    $sentencia->execute([$codigo]);
+    $fila = $sentencia->fetch();
+    $numero_filas = $fila["count"];
+    if ($numero_filas >= 1) {
+        $sentencia = $base_de_datos->prepare("SELECT * FROM clientes WHERE id = ?;");
+        $sentencia->execute([$codigo]);
+        $ret=$sentencia->fetch();
+        return $ret;
+    }
+    return false;
+}
+
+
 function devolver_datos_autocompletado($busqueda)
 {
     global $base_de_datos;
     $busqueda=mb_strtoupper($busqueda);
     $sentencia = $base_de_datos->prepare("SELECT * FROM inventario WHERE codigo LIKE ? OR nombre LIKE ? LIMIT 10;");
+    $sentencia->execute(["%$busqueda%", "%$busqueda%",]);
+    return $sentencia->fetchAll();
+}
+
+function devolver_datos_clientes($busqueda)
+{
+    global $base_de_datos;
+    $busqueda=mb_strtoupper($busqueda);
+    $sentencia = $base_de_datos->prepare("SELECT * FROM clientes WHERE cliente LIKE ? OR id LIKE ? LIMIT 10;");
     $sentencia->execute(["%$busqueda%", "%$busqueda%",]);
     return $sentencia->fetchAll();
 }

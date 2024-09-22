@@ -29,6 +29,7 @@ if (!isset($_SESSION)) exit("<script>window.location.href = '../';</script>");
                         <li><a href="./reportes-ventas">Ventas</a></li>
                         <li><a href="./reportes-gastos">Gastos</a></li>
                         <li><a href="./productos-en-stock">Productos en stock</a></li>
+                        <li><a href="./reportes-guias">Reporte de Guias</a></li>
                     </ul>
                 </li>
             </ul>

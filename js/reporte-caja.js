@@ -19,12 +19,22 @@ $(document).ready(function() {
 
 
 function escuchar_elementos(){
+	$("#fecha_inicio_guias").on("change", function(){
+		consulta_guias_fecha( $("#fecha_inicio_guias").val());
+	});
+
 	$("#fecha_inicio, #fecha_fin").on("change", function(){
 		consulta_caja_fecha( $("#fecha_inicio").val(), $("#fecha_fin").val() );
 	});
 
 	$("#generar_reporte").click(function(){
 		window.print();
+	});
+	
+	$("#generar_lista").click(function(){
+		var fecha = $("#fecha_inicio_guias").val();
+		var url = './modulos/caja/generarlista_pdf.php?fecha=' + encodeURIComponent(fecha);
+		window.open(url, '_blank');
 	});
 }
 
@@ -111,12 +121,61 @@ function dibuja_tabla_caja(datos){
 function consulta_caja_fecha(fecha_inicio, fecha_fin){
 	$.post('./modulos/caja/consultar_caja_fecha.php', {fecha_inicio: fecha_inicio, fecha_fin: fecha_fin}, function(respuesta) {
 		respuesta = JSON.parse(respuesta);
-		console.log('respuesta ' , respuesta);
 		if (respuesta !== false) {
 			dibuja_tabla_caja(respuesta);
 		}else{
 			//Manejar error o respuesta
 		}
+	});
+}
+
+function consulta_guias_fecha(fecha){
+	$.post('./modulos/caja/consultar_guias_fecha.php', {fecha: fecha}, function(respuesta) {
+		respuesta = JSON.parse(respuesta);
+		if (respuesta !== false && respuesta.length > 0) {
+			genera_tablas_guias(respuesta);
+		} else {
+			alert("No hay Reporte de Consumo de Guías / Aseo para esa fecha");
+			$("#contenedor_tabla").empty();
+		}
+	});
+}
+
+function genera_tablas_guias(datos){
+	$("#contenedor_tabla").empty();
+	
+	var tiposCliente = [...new Set(datos.map(item => item.tipo_cliente))];
+	console.log(tiposCliente);
+	tiposCliente.forEach(function(tipo) {
+		var datosFiltrados = datos.filter(item => item.tipo_cliente === tipo);
+		
+		var tabla = $('<table>').addClass('table table-bordered table-hover');
+		var encabezado = $('<thead>').append(
+			$('<tr>').append(
+				$('<th>').text('#'),
+				$('<th>').text('Fecha'),
+				$('<th>').text('Guía'),
+				$('<th>').text('Hora'),
+				$('<th>').text('Producto')
+			)
+		);
+		var cuerpo = $('<tbody>');
+		
+		$.each(datosFiltrados, function(i, item){
+			cuerpo.append(
+				$('<tr>').append(
+					$('<td>').text(i+1),
+					$('<td>').text(new Date(item.fecha).toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: 'numeric'})),
+					$('<td>').text(item.cliente.toUpperCase()),
+					$('<td>').text(item.fecha.substring(11, 16)),
+					$('<td>').text(item.nombre_producto)
+				)
+			);
+		});
+		
+		tabla.append(encabezado).append(cuerpo);
+		var tituloTabla = $('<h2>').text(tipo.charAt(0).toUpperCase() + tipo.slice(1));
+		$("#contenedor_tabla").append(tituloTabla).append(tabla).append('<br>');
 	});
 }
 
