@@ -212,7 +212,6 @@ function imprime_ticket($productos, $id_venta, $cambio, $client, $tipo, $ingredi
        $printer -> setTextSize(2, 1);
        $printer->text("\n");
        $printer->text("\n");
-       $printer->text(print_r($ingredientes));
        $printer->text("***********************");
        $printer->feed();
        $printer -> setTextSize(2, 2);

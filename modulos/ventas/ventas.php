@@ -82,12 +82,12 @@ function comprueba_si_existe_codigo($codigo)
 {
     global $base_de_datos;
     $codigo=mb_strtoupper($codigo);
-    $sentencia = $base_de_datos->prepare("SELECT count(*) AS count FROM inventario WHERE codigo = ?;");
+    $sentencia = $base_de_datos->prepare("SELECT count(*) AS count FROM inventario WHERE UPPER(codigo) = ?;");
     $sentencia->execute([$codigo]);
     $fila = $sentencia->fetch();
     $numero_filas = $fila["count"];
     if ($numero_filas >= 1) {
-        $sentencia = $base_de_datos->prepare("SELECT * FROM inventario WHERE codigo = ?;");
+        $sentencia = $base_de_datos->prepare("SELECT * FROM inventario WHERE UPPER(codigo) = ?;");
         $sentencia->execute([$codigo]);
         $ret=$sentencia->fetch();
         if($ret['agregar']){
