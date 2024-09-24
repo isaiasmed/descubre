@@ -40,17 +40,30 @@ function imprime_codigo_cliente($cliente)
     $connector = new WindowsPrintConnector($nombre_impresora);
     $printer = new Printer($connector);
     $printer->setJustification(Printer::JUSTIFY_CENTER);
-    $codigo_texto = "***".$tipo_cliente . "|" . $id_cliente;
-    $printer->setBarcodeHeight(80);
-    $printer->setBarcodeWidth(2);
-    
-    // Preparamos el código para CODE128
-    $codigo_texto_valido = '{B' . str_replace('***', '', $codigo_texto);
-    // Usamos CODE128 con el código válido
-    $printer->barcode($codigo_texto_valido, Printer::BARCODE_CODE128);
-    $printer->text($codigo_texto . "\n");
+    $ruta_imagen_logo = dirname(__DIR__) . "/img/logo.png";
+    $printer->feed();
+    $logo = EscposImage::load($ruta_imagen_logo, false);
+    $printer->bitImage($logo);
+    $printer->feed();
+    $printer->setEmphasis(true);
+    $printer->setTextSize(2, 2);
+    $printer->text("MUSEO DESCUBRE"."\n");
+    $printer->setEmphasis(false);
+    $printer->setTextSize(1, 1);
+    $printer->text("SISTEMA DE CONTROL DE ALIMENTOS"."\n");
+    $printer->feed();
+    $printer->setEmphasis(false);
+    $codigo_texto2 = '{B...'.$tipo_cliente . "^" . $id_cliente;
+    $printer->setBarcodeHeight(150);
+    $printer->setBarcodeWidth(3);
+    $printer->barcode($codigo_texto2, Printer::BARCODE_CODE128);
+    $printer->setEmphasis(true);
+    $printer->text("\n".mb_strtoupper($tipo_cliente.' '.$nombre_cliente) . "\n");
     $printer->cut();
     $printer->close();
+    
+    // Agregar mensaje de depuración
+    echo 'si imprimio';
 }
 
 function imprime_ticket($productos, $id_venta, $cambio, $client, $tipo, $ingredientes )
@@ -151,21 +164,26 @@ function imprime_ticket($productos, $id_venta, $cambio, $client, $tipo, $ingredi
             	$printer->text("TOTAL");
             	$printer->setTextSize(3, 2);
             	$printer->text(" $" . $ayudante_total . "\n");
-	    }
+	        }
             
             if($tipo=="Crédito" || $tipo=="Museo"){
-                $printer->feed();
-                $printer->feed();
-                $printer->text("\n");
-                $printer->setJustification(Printer::JUSTIFY_CENTER);
+                $printer->text("\n");                
                 $printer->setTextSize(1, 1);
-                $printer->text("************************************************");
+                $printer->setJustification(Printer::JUSTIFY_CENTER);
+                $printer->text("***************************************************");
                 $printer->setTextSize(2, 1);
                 $printer->text("\n");
-                $printer->text("CONSUMO A CREDITO");
+                if($tipo=="Museo"){
+                    $printer->setJustification(Printer::JUSTIFY_CENTER);
+                    $printer->text("RECIBI ALIMENTOS:");
+                }else{
+                    $printer->setJustification(Printer::JUSTIFY_CENTER);
+                    $printer->text("CONSUMO A CREDITO");
+                }
                 $printer->text("\n");
                 $printer->setTextSize(1, 1);
-                $printer->text("************************************************");
+                $printer->setJustification(Printer::JUSTIFY_CENTER);
+                $printer->text("***************************************************");
                 if($i>0){
                     $printer->text("\n");
                     $printer->setTextSize(2, 1);
@@ -188,14 +206,17 @@ function imprime_ticket($productos, $id_venta, $cambio, $client, $tipo, $ingredi
                     $printer->text("\n");
                     $printer->setTextSize(2, 2);
                     $printer->text($client);
+                    $printer->text("\n");
+                    $printer->text("\n");
                 }
             }
             $printer->feed();
 
-	    if($tipo!='Museo'){
+	        if($tipo!='Museo'){
             	$printer->setJustification(Printer::JUSTIFY_RIGHT);
             	$printer->setTextSize(2, 1);
             	$printer->text("\n");
+                $printer->text("\n");
             	$printer->text("CAMBIO $" . $ayudante_cambio);
             	$printer->text("\n");
             	$printer->feed();

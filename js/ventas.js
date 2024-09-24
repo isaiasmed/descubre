@@ -509,15 +509,19 @@ function escuchar_elementos() {
         if (evento.keyCode === TECLA_ENTER || evento.which === 13) {
             evento.preventDefault();
             var contenido = $(this).val().trim();
-            if (contenido.startsWith('***')) {
+            if (contenido.startsWith('...')) {
                 $.ajax({
-                    url: "./modulos/ventas/cliente.php?"+ contenido.substring(3, contenido.indexOf('|')) + "=" + contenido.substring(contenido.indexOf('|') + 1),
+                    url: "./modulos/ventas/cliente.php?"+ contenido.substring(3, contenido.indexOf('&')) + "=" + contenido.substring(contenido.indexOf('&') + 1),
                     method: 'GET',
                     dataType: 'json',
                     success: function(respuesta) {
                         if (respuesta) {
                             $("#cliente").val(respuesta.cliente);
-                            comprueba_si_existe_codigo(156845632);
+                            if(respuesta.tipo=='aseo'){
+                                comprueba_si_existe_codigo('ALMTASEO');
+                            }else{
+                                comprueba_si_existe_codigo(156845632);
+                            }
                             $("#tipo").val("Museo");
                             $("#modal_procesar_venta").modal("show");
                         } else {
