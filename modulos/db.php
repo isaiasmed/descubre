@@ -1,8 +1,8 @@
 ﻿<?php  
-$usuario = "sql3732098";
-$contraseña = "QvVQLlriuY";
-const NOMBRE_BASE_DE_DATOS = "sql3732098";
-const HOST = "sql3.freemysqlhosting.net";
+$usuario = "vesta_yardbornis";
+$contraseña = "Vesta2024#";
+const NOMBRE_BASE_DE_DATOS = "vesta_yardbornis";
+const HOST = "6re.h.filess.io:3307";
 try {
     $base_de_datos = new PDO('mysql:host='.HOST.';dbname=' . NOMBRE_BASE_DE_DATOS, $usuario, $contraseña);
     $base_de_datos->query("set names utf8;");

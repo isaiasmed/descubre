@@ -1,5 +1,9 @@
 <div class="col-md-4 col-md-offset-4 col-xs-12">
-    <h3 class="text-center">Bienvenido de nuevo <i class="fa fa-smile-o"></i></h3>
+    <div class="text-center">
+        <?php $ruta_imagen_logo = "img/vesta-logo.png"; ?>
+        <img src="<?php echo $ruta_imagen_logo; ?>" alt="Logo" class="img-responsive center-block" style="margin-top:200px; max-width: 350px; margin-bottom: 20px;">
+        <h3>Bienvenido <i class="fa fa-smile-o"></i></h3>
+    </div>
     <div class="col-md-12">
         <div class="form-group">
             <label for="usuario">Nombre de usuario</label>

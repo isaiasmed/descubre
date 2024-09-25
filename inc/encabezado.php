@@ -2,7 +2,7 @@
 if (!isset($_SESSION)) exit("<script>window.location.href = '../';</script>");
 ?>
 <?php
-const NOMBRE_NEGOCIO = "CECYTEA";
+const NOMBRE_NEGOCIO = "VESTA ADMINISTRACION";
 ?>
 <!DOCTYPE html>
 <html>
