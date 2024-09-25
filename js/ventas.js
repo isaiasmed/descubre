@@ -15,7 +15,7 @@ var productos_vender = [],
     puede_salir = true,
     total = 0,
     intervalo_ayudante_nprogress,
-    TECLA_F1 = 112,f
+    TECLA_F1 = 112,
     TECLA_F2 = 113,
     TECLA_F3 = 114,
     TECLA_F4 = 115,
@@ -55,7 +55,7 @@ function Producto(rowid, codigo, nombre, cantidad, precio, posicion, familia, pr
     this.familia = familia;
     this.precio_compra = parseFloat(precio_compra);
     this.utilidad = (this.precio_venta - this.precio_compra >= 0 ? this.precio_venta - this.precio_compra : 0 );
-};
+}
 
 
 Producto.prototype.aumentaCantidad = function () {
@@ -351,6 +351,7 @@ function realizar_venta(productos, total, cambio, cliente, ticket, tipo,ingredie
             cancelar_venta();
             $("#codigo_producto").focus();
             $("#pago_usuario").val("");
+            $('#cliente').val('PUBLICO GENERAL');
             $("#contenedor_cambio").parent().hide();
         } else {
             console.log("Error, la respuesta es:", respuesta);
@@ -518,7 +519,7 @@ function escuchar_elementos() {
                         if (respuesta) {
                             $("#cliente").val(respuesta.cliente);
                             if(respuesta.tipo=='aseo'){
-                                comprueba_si_existe_codigo('ALMTASEO');
+                                comprueba_si_existe_codigo(1568456368);
                             }else{
                                 comprueba_si_existe_codigo(156845632);
                             }
@@ -598,16 +599,22 @@ function escuchar_elementos() {
         }
     }
 
+    
     function imprimirCodigoCliente(idCliente) {
         $.ajax({
             url: "./modulos/ventas/imprimir_codigo_cliente.php",
             method: "POST",
             data: { id: idCliente },
-            success: function(response) {
-                console.log("Código de cliente impreso");
+            dataType: "json",
+            success: function(respuesta) {
+                if (respuesta.success) {
+                    console.log("Código de cliente impreso con éxito");
+                } else {
+                    console.error("Error al imprimir el código del cliente:", respuesta.error);
+                }
             },
             error: function(xhr, status, error) {
-                console.error("Error al imprimir código de cliente:", error);
+                console.error("Error al imprimir el código del cliente:", error);
             }
         });
     }
@@ -801,4 +808,3 @@ function comprueba_si_existe_codigo(codigo) {
 
     });
 }
-

@@ -10,7 +10,7 @@ if (!isset($_SESSION)) exit("<script>window.location.href = '../';</script>");
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-            <a class="navbar-brand" href="#" id="marca_del_producto"><?php echo NOMBRE_NEGOCIO ?></a>
+            <a class="navbar-brand" href="#" id="marca_del_producto">VESTA</a>
         </div>
         <div id="navbar" class="navbar-collapse collapse">
             <ul class="nav navbar-nav">
