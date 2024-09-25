@@ -1,6 +1,6 @@
 <?php
-require_once dirname(dirname(__DIR__)) . '/vendor/autoload.php';
-require_once dirname(dirname(__DIR__)) . '/modulos/db.php';
+require_once dirname(__DIR__) . '/vendor/autoload.php';
+require_once dirname(__DIR__) . '/modulos/db.php';
 
 use Mpdf\Mpdf;
 
@@ -67,7 +67,7 @@ try {
     ]);
     $mpdf->SetFont('Arial', '', 10);
 
-    $rutaLogo = dirname(dirname(__DIR__)). '/img/logo_color.png';
+    $rutaLogo = dirname(__DIR__). '/img/logo_color.png';
     
     $html = $css;
     $html .= "<table width='100%'><tr><td width='20%'>";

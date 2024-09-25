@@ -30,6 +30,7 @@ if (!isset($_SESSION)) exit("<script>window.location.href = '../';</script>");
                         <li><a href="./reportes-gastos">Gastos</a></li>
                         <li><a href="./productos-en-stock">Productos en stock</a></li>
                         <li><a href="./reportes-guias">Reporte de Guias</a></li>
+                        <li><a target="_blank" href="./inc/listaprecios.php">Lista de Precios</a></li>
                     </ul>
                 </li>
             </ul>
@@ -57,7 +58,7 @@ if (!isset($_SESSION)) exit("<script>window.location.href = '../';</script>");
 </nav>
 <script>
     $(document).ready(function() {
-        comprobar_productos_con_existencia_minima();
+        /*comprobar_productos_con_existencia_minima();
         var veces_tocado = 0,
             ayudante_timeout;
         $("#marca_del_producto").click(function(e) {
@@ -70,7 +71,7 @@ if (!isset($_SESSION)) exit("<script>window.location.href = '../';</script>");
                 clearTimeout(ayudante_timeout);
             }, 500);
             e.preventDefault();
-        });
+        });*/
     });
 
     function abrir_cajon() {
