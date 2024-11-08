@@ -210,11 +210,11 @@ function insertar_producto($codigo_producto, $nombre_producto, $precio_compra, $
     global $base_de_datos;
     $sentencia = $base_de_datos->prepare("
 	INSERT INTO inventario 
-	(codigo, nombre, precio_compra, precio_venta, utilidad, existencia, stock, familia)
+	(codigo, nombre, precio_compra, precio_venta, utilidad, existencia, stock, familia,agregar)
 	VALUES
-	(?,?,?,?,?,?,?,?);
+	(?,?,?,?,?,?,?,?,?);
 	");
-    $resultado_sentencia = $sentencia->execute([$codigo_producto, $nombre_producto, $precio_compra, $precio_venta, $utilidad, $inventario_inicial, $stock, $familia]);
+    $resultado_sentencia = $sentencia->execute([$codigo_producto, $nombre_producto, $precio_compra, $precio_venta, $utilidad, $inventario_inicial, $stock, $familia,0]);
     if ($resultado_sentencia === TRUE) return 0;
     return 1;
 }

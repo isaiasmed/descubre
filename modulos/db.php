@@ -1,8 +1,12 @@
 ﻿<?php  
-$usuario = "vesta_yardbornis";
+/*$usuario = "vesta_yardbornis";
 $contraseña = "Vesta2024#";
 const NOMBRE_BASE_DE_DATOS = "vesta_yardbornis";
-const HOST = "6re.h.filess.io:3307";
+const HOST = "6re.h.filess.io:3307";*/
+$usuario = "root";
+$contraseña = "";
+const NOMBRE_BASE_DE_DATOS = "vesta_2024";
+const HOST = "localhost";
 try {
     $base_de_datos = new PDO('mysql:host='.HOST.';dbname=' . NOMBRE_BASE_DE_DATOS, $usuario, $contraseña);
     $base_de_datos->query("set names utf8;");
